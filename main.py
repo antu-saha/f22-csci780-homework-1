@@ -7,11 +7,16 @@ from torch.utils.tensorboard import SummaryWriter
 import wandb
 
 if __name__ == '__main__':
+    # hyper parameters
+    num_epochs = 100
+    batch_size = 200
+    learning_rate = 0.001
+
     wandb.init(project="f22-csci780-homework-1")
     wandb.config = {
-        "learning_rate": 0.001,
-        "epochs": 4,
-        "batch_size": 200
+        "learning_rate": learning_rate,
+        "epochs": num_epochs,
+        "batch_size": batch_size
     }
 
     writer = SummaryWriter("runs/cifar10")
@@ -20,11 +25,6 @@ if __name__ == '__main__':
 
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
     print(f'Device: {device}')
-
-    # hyper parameters
-    num_epochs = 100
-    batch_size = 200
-    learning_rate = 0.001
 
     print(f'Please select one from the following menu:')
     print(f'For CNN, press: 1')
