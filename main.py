@@ -22,7 +22,7 @@ if __name__ == '__main__':
     print(f'Device: {device}')
 
     # hyper parameters
-    num_epochs = 4
+    num_epochs = 100
     batch_size = 200
     learning_rate = 0.001
 
@@ -32,7 +32,6 @@ if __name__ == '__main__':
 
     user_input = input('Enter your choice:')
     user_input = int(user_input)
-    print(user_input)
 
     if user_input == 1:
         model = ConvNet()
