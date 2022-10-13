@@ -91,6 +91,7 @@ def load_checkpoint(ckp_path, model, optimizer):
 
 
 def train(writer, ckp_path, train_loader, num_epochs, device, model, criterion, optimizer):
+    print(f'Entering into the training loop...')
     n_total_steps = len(train_loader)
     running_loss = 0.0
     running_correct = 0
@@ -123,15 +124,14 @@ def train(writer, ckp_path, train_loader, num_epochs, device, model, criterion, 
                 running_loss = 0.0
                 running_correct = 0
 
-
-
-            # if epoch % 1 == 0:
-    save_checkpoint(ckp_path, model, epoch, optimizer, loss)
+        if epoch % 10 == 0:
+            save_checkpoint(ckp_path, model, epoch, optimizer, loss)
 
     print('Finished Training...')
 
 
 def test(device, batch_size, test_loader, model, classes):
+    print(f'Entering into the test loop...')
     with torch.no_grad():
         target = torch.tensor([])
         target = target.type(torch.LongTensor)
@@ -163,13 +163,10 @@ def test(device, batch_size, test_loader, model, classes):
                     n_class_correct[label] += 1
                 n_class_samples[label] += 1
 
+        print(f'Testing finished.')
         print(f'# of Samples: {n_samples}')
-        print(target)
-        print(len(target))
-        print(prediction)
-        print(len(prediction))
         average = 'macro'
-        print('Metrics:')
+        print('Results:')
         # print(f'ACC: {accuracy_score(target, prediction)}')
         # print(f'REC: {recall_score(target, prediction, average=average)}')
         # print(f'PREC: {precision_score(target, prediction, average=average)}')
@@ -183,9 +180,11 @@ def test(device, batch_size, test_loader, model, classes):
         print(f'F1 score of the network: {net_f1_score}')
 
         # print(f'TM P_R: {precision_recall(prediction, target, average=average, num_classes=10)}')
-        acc = 100.0 * n_correct / n_samples
-        print(f'Accuracy of the network (manual calculation): {acc} %')
 
+        print(f'\n\nResults of manual calculation:')
+        acc = 100.0 * n_correct / n_samples
+        print(f'Accuracy of the network: {acc} %')
+        print(f'Accuracy of each classes:')
         for i in range(10):
             acc = 100.0 * n_class_correct[i] / n_class_samples[i]
-            print(f'Accuracy of {classes[i]} (manual calculation): {acc} %')
+            print(f'Accuracy of {classes[i]}: {acc} %')
