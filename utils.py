@@ -2,7 +2,7 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 import wandb
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 from torchmetrics.functional import accuracy, precision, recall
 from torchmetrics.functional import precision_recall
 from torch.utils.data.distributed import DistributedSampler
@@ -90,8 +90,9 @@ def load_checkpoint(ckp_path, model, optimizer):
     return model, optimizer, epoch, loss
 
 
-def train(writer, ckp_path, train_loader, num_epochs, device, model, criterion, optimizer):
+def train(ckp_path, train_loader, num_epochs, device, model, criterion, optimizer):
     print(f'Entering into the training loop...')
+    wandb.watch(model)
     n_total_steps = len(train_loader)
     running_loss = 0.0
     running_correct = 0
@@ -118,8 +119,8 @@ def train(writer, ckp_path, train_loader, num_epochs, device, model, criterion, 
             if (i + 1) % 50 == 0:
                 print(f'Epoch [{epoch + 1}/{num_epochs}, Step [{i + 1}/{n_total_steps}]'
                       f'Loss: {loss.item():.4f}]')
-                writer.add_scalar('training loss', running_loss / 100, epoch * n_total_steps + i)
-                writer.add_scalar('accuracy', running_correct / 100, epoch * n_total_steps + i)
+                # writer.add_scalar('training loss', running_loss / 100, epoch * n_total_steps + i)
+                # writer.add_scalar('accuracy', running_correct / 100, epoch * n_total_steps + i)
                 wandb.log({"Epoch": epoch + 1, "Loss": loss, "Model Accuracy:": running_correct / 100})
                 running_loss = 0.0
                 running_correct = 0

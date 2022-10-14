@@ -3,7 +3,7 @@ import torch.nn as nn
 from model import ConvNet
 import torchvision.models as models
 from utils import load_dataset, load_checkpoint, train, test
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 import wandb
 
 if __name__ == '__main__':
@@ -19,7 +19,7 @@ if __name__ == '__main__':
         "batch_size": batch_size
     }
 
-    writer = SummaryWriter("runs/cifar10")
+    # writer = SummaryWriter("runs/cifar10")
 
     ckp_path = 'checkpoints/checkpoint.pt'
 
@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     # model, optimizer, epoch, loss = load_checkpoint(ckp_path, model, optimizer)
     model.train()
-    train(writer, ckp_path, train_loader, num_epochs, device, model, criterion, optimizer)
+    train(ckp_path, train_loader, num_epochs, device, model, criterion, optimizer)
 
     model.eval()
     test(device, batch_size, test_loader, model, classes)
