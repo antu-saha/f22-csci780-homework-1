@@ -130,7 +130,8 @@ if __name__ == "__main__":
         model = ConvNet()
     elif user_input == 2:
         model = models.resnet18(pretrained=True)
-    model = torch.load("checkpoint.pt")
+
+    model.load_state_dict(torch.load("checkpoint.pt"))
     model = model.to(device)
     train_data, test_data, classes = load_dataset(batch_size)
     test(device, batch_size, test_data, model, classes)
