@@ -8,6 +8,9 @@ import os
 from model import ConvNet
 from utils import load_dataset, test
 import wandb
+import torchvision.models as models
+
+wandb.init(project="f22-csci780-homework-1")
 
 
 def ddp_setup(rank, world_size):
@@ -83,10 +86,13 @@ class Trainer:
         print('Finished Training...')
 
 
-def main(rank: int, world_size: int, total_epochs: int, save_every: int, batch_size: int, learning_rate: float):
+def main(rank: int, world_size: int, total_epochs: int, save_every: int, batch_size: int, learning_rate: float, user_input: int):
     ddp_setup(rank, world_size)
     train_data, test_data, classes = load_dataset(batch_size)
-    model = ConvNet()
+    if user_input == 1:
+        model = ConvNet()
+    elif user_input == 2:
+        model = models.resnet18(pretrained=True)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -97,23 +103,33 @@ def main(rank: int, world_size: int, total_epochs: int, save_every: int, batch_s
 
 if __name__ == "__main__":
     # hyper parameters
-    save_every = 5
-    num_epochs = 10
+    save_every = 50
+    num_epochs = 200
     batch_size = 1000
     learning_rate = 0.001
     world_size = torch.cuda.device_count()
 
-    wandb.init(project="f22-csci780-homework-1")
+
     wandb.config = {
         "learning_rate": learning_rate,
         "epochs": num_epochs,
         "batch_size": batch_size
     }
 
-    mp.spawn(main, args=(world_size, num_epochs, save_every, batch_size, learning_rate), nprocs=world_size)
+    print(f'Please select one from the following menu:')
+    print(f'For CNN, press: 1')
+    print(f'For ResNet-18, press: 2')
+
+    user_input = input('Enter your choice: ')
+    user_input = int(user_input)
+
+    mp.spawn(main, args=(world_size, num_epochs, save_every, batch_size, learning_rate, user_input), nprocs=world_size)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
-    model = ConvNet()
+    if user_input == 1:
+        model = ConvNet()
+    elif user_input == 2:
+        model = models.resnet18(pretrained=True)
     model = torch.load("checkpoint.pt")
     model = model.to(device)
     train_data, test_data, classes = load_dataset(batch_size)
