@@ -95,8 +95,8 @@ class Trainer:
                     running_loss = 0.0
                     running_correct = 0
 
-            if self.gpu_id == 0 and epoch % self.save_every == 0:
-                self.save_checkpoint(epoch)
+            if self.gpu_id == 0 and epoch + 1 % self.save_every == 0:
+                self.save_checkpoint(epoch + 1)
 
         print('Finished Training...')
 
@@ -122,8 +122,18 @@ class Trainer:
     )"""
 
 
-def main(rank: int, world_size: int, save_every: int, model, train_data, optimizer, criterion, total_epochs: int):
+def main(rank: int, world_size: int, save_every: int, total_epochs: int, batch_size: int):
+    # hyper parameters
+    # save_every = 5
+    # total_epochs = 10
+    # batch_size = 1000
+    learning_rate = 0.001
+
     ddp_setup(rank, world_size)
+    train_data, test_data, classes = load_dataset(batch_size)
+    model = ConvNet()
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # dataset, model, optimizer = load_train_objs()
     # train_data = prepare_dataloader(train_loader, batch_size)
@@ -143,19 +153,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     world_size = torch.cuda.device_count()
+    mp.spawn(main, args=(world_size, args.total_epochs, args.save_every, args.batch_size), nprocs=world_size)
 
-    # hyper parameters
-    save_every = 5
-    total_epochs = 10
-    batch_size = 1000
-    learning_rate = 0.001
-
-    device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
-    train_data, test_data, classes = load_dataset(batch_size)
-    model = ConvNet()
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
-    mp.spawn(main, args=(
-        world_size, model, train_data, optimizer, criterion, total_epochs, save_every), nprocs=world_size)
-    test(device, batch_size, test_data, model, classes)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
+    model = torch.load("checkpoint.pt")
+    train_data, test_data, classes = load_dataset(args.batch_size)
+    test(device, args.batch_size, test_data, model, classes)
