@@ -1,16 +1,13 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
-
+from torch.utils.data import DataLoader
 import torch.multiprocessing as mp
-from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 import os
-
 from model import ConvNet
-from utils import load_dataset, load_checkpoint, train, test
+from utils import load_dataset_for_ddp, test
+import wandb
 
 
 def ddp_setup(rank, world_size):
@@ -41,21 +38,6 @@ class Trainer:
         self.criterion = criterion
         self.save_every = save_every
         self.model = DDP(model, device_ids=[gpu_id])
-
-    """def _run_batch(self, source, targets):
-        self.optimizer.zero_grad()
-        output = self.model(source)
-        loss = F.cross_entropy(output, targets)
-        loss.backward()
-        self.optimizer.step()
-
-    def _run_epoch(self, epoch):
-        b_sz = len(next(iter(self.train_data))[0])
-        print(f"[GPU{self.gpu_id}] Epoch {epoch} | Batchsize: {b_sz} | Steps: {len(self.train_data)}")
-        for source, targets in self.train_data:
-            source = source.to(self.gpu_id)
-            targets = targets.to(self.gpu_id)
-            self._run_batch(source, targets)"""
 
     def save_checkpoint(self, epoch):
         ckp = self.model.module.state_dict()
@@ -90,53 +72,23 @@ class Trainer:
                 if (i + 1) % 50 == 0:
                     print(f'Epoch [{epoch + 1}/{max_epochs}, Step [{i + 1}/{n_total_steps}]'
                           f'Loss: {loss.item():.4f}]')
-                    # writer.add_scalar('training loss', running_loss / 100, epoch * n_total_steps + i)
-                    # writer.add_scalar('accuracy', running_correct / 100, epoch * n_total_steps + i)
+                    wandb.log({"Epoch": epoch + 1, "Loss": loss, "Model Accuracy:": running_correct / 100})
+
                     running_loss = 0.0
                     running_correct = 0
 
-            if self.gpu_id == 0 and epoch + 1 % self.save_every == 0:
+            if self.gpu_id == 0 and (epoch + 1) % self.save_every == 0:
                 self.save_checkpoint(epoch + 1)
 
         print('Finished Training...')
 
-        """for epoch in range(max_epochs):
-            self._run_epoch(epoch)
-            if self.gpu_id == 0 and epoch % self.save_every == 0:
-                self._save_checkpoint(epoch)"""
 
-
-"""def load_train_objs():
-    train_set = MyTrainDataset(2048)  # load your dataset
-    model = ConvNet  # load your model
-    optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
-    return train_set, model, optimizer"""
-
-"""def prepare_dataloader(dataset: Dataset, batch_size: int):
-    return DataLoader(
-        dataset,
-        batch_size=batch_size,
-        pin_memory=True,
-        shuffle=False,
-        sampler=DistributedSampler(dataset)
-    )"""
-
-
-def main(rank: int, world_size: int, save_every: int, total_epochs: int, batch_size: int):
-    # hyper parameters
-    # save_every = 5
-    # total_epochs = 10
-    # batch_size = 1000
-    learning_rate = 0.001
-
+def main(rank: int, world_size: int, total_epochs: int, save_every: int, batch_size: int, learning_rate: float):
     ddp_setup(rank, world_size)
-    train_data, test_data, classes = load_dataset(batch_size)
+    train_data, test_data, classes = load_dataset_for_ddp(batch_size)
     model = ConvNet()
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
-    # dataset, model, optimizer = load_train_objs()
-    # train_data = prepare_dataloader(train_loader, batch_size)
 
     trainer = Trainer(model, train_data, optimizer, criterion, rank, save_every)
     trainer.train(total_epochs)
@@ -144,18 +96,25 @@ def main(rank: int, world_size: int, save_every: int, total_epochs: int, batch_s
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description='simple distributed training job')
-    parser.add_argument('total_epochs', type=int, help='Total epochs to train the model')
-    parser.add_argument('save_every', type=int, help='How often to save a snapshot')
-    parser.add_argument('--batch_size', default=1000, help='Input batch size on each device (default: 32)')
-    args = parser.parse_args()
-
+    # hyper parameters
+    save_every = 5
+    num_epochs = 10
+    batch_size = 1000
+    learning_rate = 0.001
     world_size = torch.cuda.device_count()
-    mp.spawn(main, args=(world_size, args.total_epochs, args.save_every, args.batch_size), nprocs=world_size)
+
+    wandb.init(project="f22-csci780-homework-1")
+    wandb.config = {
+        "learning_rate": learning_rate,
+        "epochs": num_epochs,
+        "batch_size": batch_size
+    }
+
+    mp.spawn(main, args=(world_size, num_epochs, save_every, batch_size, learning_rate), nprocs=world_size)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
+    model = ConvNet()
     model = torch.load("checkpoint.pt")
-    train_data, test_data, classes = load_dataset(args.batch_size)
-    test(device, args.batch_size, test_data, model, classes)
+    model = model.to(device)
+    train_data, test_data, classes = load_dataset_for_ddp(batch_size)
+    test(device, batch_size, test_data, model, classes)
