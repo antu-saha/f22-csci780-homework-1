@@ -6,7 +6,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 import os
 from model import ConvNet
-from utils import load_dataset_for_ddp, test
+from utils import load_dataset, test
 import wandb
 
 
@@ -85,7 +85,7 @@ class Trainer:
 
 def main(rank: int, world_size: int, total_epochs: int, save_every: int, batch_size: int, learning_rate: float):
     ddp_setup(rank, world_size)
-    train_data, test_data, classes = load_dataset_for_ddp(batch_size)
+    train_data, test_data, classes = load_dataset(batch_size)
     model = ConvNet()
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -116,5 +116,5 @@ if __name__ == "__main__":
     model = ConvNet()
     model = torch.load("checkpoint.pt")
     model = model.to(device)
-    train_data, test_data, classes = load_dataset_for_ddp(batch_size)
+    train_data, test_data, classes = load_dataset(batch_size)
     test(device, batch_size, test_data, model, classes)
