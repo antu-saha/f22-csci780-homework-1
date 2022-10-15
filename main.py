@@ -10,7 +10,7 @@ if __name__ == '__main__':
     # hyper parameters
     num_epochs = 100
     batch_size = 200
-    learning_rate = 0.001
+    learning_rate = 0.01
 
     wandb.init(project="f22-csci780-homework-1")
     wandb.config = {
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     print(f'For CNN, press: 1')
     print(f'For ResNet-18, press: 2')
 
-    user_input = input('Enter your choice:')
+    user_input = input('Enter your choice: ')
     user_input = int(user_input)
 
     if user_input == 1:
