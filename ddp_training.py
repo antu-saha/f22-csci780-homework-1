@@ -86,7 +86,8 @@ class Trainer:
         print('Finished Training...')
 
 
-def main(rank: int, world_size: int, total_epochs: int, save_every: int, batch_size: int, learning_rate: float, user_input: int):
+def main(rank: int, world_size: int, total_epochs: int, save_every: int, batch_size: int, learning_rate: float,
+         user_input: int):
     ddp_setup(rank, world_size)
     train_data, test_data, classes = load_dataset(batch_size)
     if user_input == 1:
@@ -103,12 +104,11 @@ def main(rank: int, world_size: int, total_epochs: int, save_every: int, batch_s
 
 if __name__ == "__main__":
     # hyper parameters
-    save_every = 50
-    num_epochs = 200
-    batch_size = 1000
+    save_every = 10
+    num_epochs = 100
+    batch_size = 500
     learning_rate = 0.001
     world_size = torch.cuda.device_count()
-
 
     wandb.config = {
         "learning_rate": learning_rate,

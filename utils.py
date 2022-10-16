@@ -40,37 +40,6 @@ def load_dataset(batch_size):
     return train_loader, test_loader, classes
 
 
-def load_dataset_for_ddp(batch_size):
-    # dataset has PILImage images of range [0, 1].
-    # we transform them to Tensors of normalized range [-1, 1]
-    transform = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize(
-            (0.5, 0.5, 0.5), (0.5, 0.5, 0.5)
-        )]
-    )
-
-    train_dataset = torchvision.datasets.CIFAR10(
-        root='./CIFAR_Dataset', train=True, download=True, transform=transform
-    )
-
-    test_dataset = torchvision.datasets.CIFAR10(
-        root='./CIFAR_Dataset', train=False, download=True, transform=transform
-    )
-
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=False, sampler=DistributedSampler, pin_memory=True
-    )
-
-    test_loader = torch.utils.data.DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=False
-    )
-
-    classes = ('Plane', 'Car', 'Bird', 'Cat', 'Deer',
-               'Dog', 'Frog', 'Horse', 'Ship', 'Truck')
-
-    return train_loader, test_loader, classes
-
-
 def save_checkpoint(ckp_path, model, epoch, optimizer, loss):
     checkpoint = {
         'epoch': epoch,

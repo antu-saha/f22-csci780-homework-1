@@ -9,8 +9,8 @@ import wandb
 if __name__ == '__main__':
     # hyper parameters
     num_epochs = 100
-    batch_size = 200
-    learning_rate = 0.01
+    batch_size = 500
+    learning_rate = 0.001
 
     wandb.init(project="f22-csci780-homework-1")
     wandb.config = {
